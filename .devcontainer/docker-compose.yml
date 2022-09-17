@@ -1,0 +1,62 @@
+version: "3.8"
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VARIANT: bullseye
+    environment:
+      - DATABASE_URL=postgres://user:pass@postgres/postgres
+    security_opt:
+      - seccomp:unconfined
+    cap_add:
+      - SYS_PTRACE
+    volumes:
+      - ..:/workspace:cached
+    command: sleep infinity
+
+  postgres:
+    image: postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=pass
+      - POSTGRES_DB=postgres
+      - POSTGRES_HOSTNAME=localhost
+      - POSTGRES_PORT=5432
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  pgadmin:
+    image: dpage/pgadmin4
+    restart: unless-stopped
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@admin.com
+      - PGADMIN_DEFAULT_PASSWORD=secret
+      - PGADMIN_LISTEN_PORT=80
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    ports:
+      - "8080:80"
+
+  redis:
+    image: redis
+    restart: unless-stopped
+    command: redis-server --save 20 1 --loglevel warning
+    volumes:
+      - redis-data:/data
+  redisinsight:
+    image: redislabs/redisinsight:latest
+    restart: unless-stopped
+    volumes:
+      - redisinsight-data:/db
+    ports:
+      - "8001:8001"
+
+volumes:
+  postgres-data:
+  pgadmin-data:
+  redis-data:
+  redisinsight-data:
