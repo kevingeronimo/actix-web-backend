@@ -47,6 +47,7 @@ services:
     command: redis-server --save 20 1 --loglevel warning
     volumes:
       - redis-data:/data
+      
   redisinsight:
     image: redislabs/redisinsight:latest
     restart: unless-stopped

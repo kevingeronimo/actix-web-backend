@@ -39,7 +39,7 @@ impl AuthService {
 
         User::create(dto, pool)
             .await
-            .context("failed to create user")
+            .context("Failed to create user")
             .map_err(|e| e.into())
     }
 }

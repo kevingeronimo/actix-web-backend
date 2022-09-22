@@ -1,5 +1,12 @@
-use actix_web::{middleware::Logger, web, App, HttpServer};
-use actix_web_backend::handler::{login, register};
+use actix_session::{
+    config::PersistentSession, storage::RedisActorSessionStore, SessionMiddleware,
+};
+use actix_web::{
+    cookie::{time, Key},
+    middleware::Logger,
+    web, App, HttpServer,
+};
+use actix_web_backend::handler::{login, protected, register};
 use sqlx::postgres::PgPoolOptions;
 
 #[actix_web::main]
@@ -14,14 +21,28 @@ async fn main() -> anyhow::Result<()> {
         .connect(&db_url)
         .await?;
 
+    let secret_key = Key::generate();
+
     HttpServer::new(move || {
         App::new()
-            .wrap(Logger::default())
             .app_data(web::Data::new(pool.clone()))
             .service(login)
             .service(register)
+            .service(protected)
+            .wrap(
+                SessionMiddleware::builder(
+                    RedisActorSessionStore::new("redis:6379"),
+                    secret_key.clone(),
+                )
+                .session_lifecycle(
+                    PersistentSession::default().session_ttl(time::Duration::days(1)),
+                )
+                .cookie_secure(false)
+                .build(),
+            )
+            .wrap(Logger::default())
     })
-    .bind(("127.0.0.1", 8080))?
+    .bind(("127.0.0.1", 3000))?
     .run()
     .await
     .map_err(Into::into)

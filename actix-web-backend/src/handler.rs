@@ -3,18 +3,24 @@ use crate::{
     dto::{LoginDto, RegisterDto},
     service::AuthService,
 };
+use actix_session::Session;
 use actix_web::{
-    post,
+    get, post,
     web::{Data, Json},
     HttpResponse, Responder,
 };
+use anyhow::Context;
 
 #[post("/login")]
 async fn login(
+    session: Session,
     pool: Data<sqlx::PgPool>,
     Json(login_dto): Json<LoginDto>,
 ) -> Result<impl Responder> {
     let user = AuthService::sign_in(login_dto, &pool).await?;
+    session
+        .insert("username", &user.username)
+        .context("Fail to add username to session")?;
 
     Ok(HttpResponse::Ok().json(user))
 }
@@ -27,4 +33,13 @@ async fn register(
     let user = AuthService::sign_up(register_dto, &pool).await?;
 
     Ok(HttpResponse::Ok().json(user))
+}
+
+#[get("/protected")]
+async fn protected(session: Session) -> Result<impl Responder> {
+    if let Some(username) = session.get::<String>("username").context("Unable to get username from session")? {
+        Ok(HttpResponse::Ok().body(format!("Welcome! {username}")))
+    } else {
+        Err(crate::error::Error::Unauthorized)
+    }
 }
