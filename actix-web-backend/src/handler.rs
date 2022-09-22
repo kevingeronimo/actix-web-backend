@@ -37,7 +37,10 @@ async fn register(
 
 #[get("/protected")]
 async fn protected(session: Session) -> Result<impl Responder> {
-    if let Some(username) = session.get::<String>("username").context("Unable to get username from session")? {
+    if let Some(username) = session
+        .get::<String>("username")
+        .context("Unable to get username from session")?
+    {
         Ok(HttpResponse::Ok().body(format!("Welcome! {username}")))
     } else {
         Err(crate::error::Error::Unauthorized)
