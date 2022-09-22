@@ -5,10 +5,10 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
-    #[error("invalid credentials")]
+    #[error("Invalid credentials")]
     Unauthorized,
 
-    #[error("username already exists")]
+    #[error("Username already exists")]
     UsernameAlreadyExists,
 
     #[error("{0:?}")]
@@ -43,6 +43,8 @@ impl ResponseError for Error {
             message,
             error: status_code.canonical_reason().unwrap().to_owned(),
         };
+
+        log::error!("{self}");
         HttpResponse::build(status_code).json(error_response)
     }
 }
