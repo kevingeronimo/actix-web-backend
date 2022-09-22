@@ -17,10 +17,13 @@ pub enum Error {
 
 impl ResponseError for Error {
     fn status_code(&self) -> StatusCode {
-        match *self {
+        match self {
             Self::Unauthorized => StatusCode::UNAUTHORIZED,
             Self::UsernameAlreadyExists => StatusCode::CONFLICT,
-            Self::Other(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            Self::Other(root_cause) => match root_cause.downcast_ref::<sqlx::Error>() {
+                Some(sqlx::Error::RowNotFound) => StatusCode::NOT_FOUND,
+                _ => StatusCode::INTERNAL_SERVER_ERROR,
+            },
         }
     }
 
@@ -29,16 +32,16 @@ impl ResponseError for Error {
         let message = match self {
             Error::Unauthorized => self.to_string(),
             Error::UsernameAlreadyExists => self.to_string(),
-            Error::Other(ref root_cause) => match root_cause.downcast_ref::<sqlx::Error>() {
-                Some(sqlx::Error::RowNotFound) => "not found".to_owned(),
-                _ => "internal server error".to_owned(),
+            Error::Other(root_cause) => match root_cause.downcast_ref::<sqlx::Error>() {
+                Some(sqlx::Error::RowNotFound) => "Unable to find requested resource".to_owned(),
+                _ => "Something went wrong.".to_owned(),
             },
         };
 
         let error_response = ErrorResponse {
             code: status_code.as_u16(),
             message,
-            error: self.status_code().to_string(),
+            error: status_code.canonical_reason().unwrap().to_owned(),
         };
         HttpResponse::build(status_code).json(error_response)
     }

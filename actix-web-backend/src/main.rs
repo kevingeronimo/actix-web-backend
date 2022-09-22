@@ -1,5 +1,5 @@
 use actix_web::{web, App, HttpServer};
-use actix_web_backend::handler::login;
+use actix_web_backend::handler::{login, register};
 use sqlx::postgres::PgPoolOptions;
 
 #[actix_web::main]
@@ -17,6 +17,7 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .app_data(web::Data::new(pool.clone()))
             .service(login)
+            .service(register)
     })
     .bind(("127.0.0.1", 8080))?
     .run()
