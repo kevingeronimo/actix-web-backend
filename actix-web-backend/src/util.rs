@@ -6,10 +6,9 @@ use argon2::{
 
 pub async fn hash_password(password: String) -> anyhow::Result<String> {
     let salt = SaltString::generate(&mut OsRng);
-    let argon2 = Argon2::default();
 
     task::spawn_blocking(move || {
-        argon2
+        Argon2::default()
             .hash_password(password.as_bytes(), &salt)
             .map(|v| v.to_string())
             .map_err(Into::into)

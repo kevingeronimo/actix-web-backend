@@ -9,7 +9,6 @@ use actix_web::{
     web::{Data, Json},
     HttpResponse, Responder,
 };
-use anyhow::Context;
 
 #[post("/login")]
 async fn login(
@@ -20,7 +19,7 @@ async fn login(
     let user = AuthService::sign_in(login_dto, &pool).await?;
     session
         .insert("username", &user.username)
-        .context("Fail to add username to session")?;
+        .map_err(anyhow::Error::new)?;
 
     Ok(HttpResponse::Ok().json(user))
 }
@@ -39,7 +38,7 @@ async fn register(
 async fn protected(session: Session) -> Result<impl Responder> {
     if let Some(username) = session
         .get::<String>("username")
-        .context("Unable to get username from session")?
+        .map_err(anyhow::Error::new)?
     {
         Ok(HttpResponse::Ok().body(format!("Welcome! {username}")))
     } else {
